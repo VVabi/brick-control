@@ -1,5 +1,4 @@
 extern crate blurz;
-use std::thread;
 use blurz::bluetooth_adapter::BluetoothAdapter;
 use blurz::bluetooth_device::BluetoothDevice;
 use blurz::bluetooth_session::BluetoothSession;
@@ -28,34 +27,50 @@ impl BleBrickDevice {
         loop {
             for event in self.session.incoming(1).map(BluetoothEvent::from) {
                 match event {
-                    Some(x) => println!("event {:?}", x),
-                    None    => println!("None"),
+                    Some(x) => log::debug!("event {:?}", x),
+                    None    => (),
                 }
             }
 
-            let list = messenger.receive_message(&messages::SetMotorPwm::get_topic());
+            let mut cnt: u32 = 0;
 
-            for msg in list {
-                println!("{}", msg);
-                let meas: messages::SetMotorPwm = serde_json::from_str(&msg).unwrap();
-                characteristic.write_value(serialize_ble_cmd(&meas), None);
+            loop {
+                let next = messenger.receive_ble_message();
+
+                match next {
+                    Ok(x) => {
+                        cnt = cnt+1;
+
+                        if cnt < 5 {
+                            characteristic.write_value(serialize_ble_cmd(&*x), None).unwrap()
+                        } else {
+                            log::error!("too many incoming commands, discarding to keep communication to hub alive");
+                        }
+                    }
+                    Err(v) => {
+                        if !v {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 
-pub fn init_ble_communication() -> BleBrickDevice{
+pub fn init_ble_communication() -> Result<BleBrickDevice, std::io::Error> {
     let session = BluetoothSession::create_session(None).unwrap();
     let adapter: BluetoothAdapter = BluetoothAdapter::init(&session).unwrap();
 
     let device_list = adapter.get_device_list();
 
     let mut name = "".to_string();
+    let mut found = false;
     for d in device_list {
         for x in d {
             let device = BluetoothDevice::new(&session, x.clone());
-            println!(
+            log::info!(
                 "{} {:?} {:?}",
                 device.get_id(),
                 device.get_address().unwrap(),
@@ -63,29 +78,45 @@ pub fn init_ble_communication() -> BleBrickDevice{
             );
 
             if device.get_name().unwrap() == "Technic Hub" {
-                name = x.clone()
+                name = x.clone();
+                found = true;
             }
         }
+    }
+
+    if !found {
+        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Technic Hub not found"));
     }
 
     let device = BluetoothDevice::new(&session, name.clone());
     let result = device.connect(1000);
 
-    result.unwrap();
-
-    let res = device.get_gatt_services().unwrap();
-
-    for x in res {
-        println!("{:?}", x);
-        let service = BluetoothGATTService::new(&session, x.clone());
-        let uuid = service.get_uuid().unwrap();
-        println!("{:?}", uuid);
+    if let Err(_err) = result {
+        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Could not connect"));
     }
 
-    let char_path = "/org/bluez/hci0/dev_90_84_2B_58_1A_B1/service000c".to_string();
-    let service = BluetoothGATTService::new(&session, char_path.clone());
-    let chars = service.get_gatt_characteristics().unwrap();
-    let characteristic_path = chars.first().unwrap().to_string();
+    let res = device.get_gatt_services();
 
-    BleBrickDevice {session, characteristic_path}
+    match res {
+        Ok(services) => {
+            for x in services {
+                let service = BluetoothGATTService::new(&session, x.clone());
+                let uuid = service.get_uuid().unwrap();
+        
+                if uuid == "00001623-1212-efde-1623-785feabcd123" {
+                    let char_path = x.clone();
+                    let service = BluetoothGATTService::new(&session, char_path.clone());
+                    let chars = service.get_gatt_characteristics().unwrap();
+                    let characteristic_path = chars.first().unwrap().to_string();
+                
+                    return Ok(BleBrickDevice {session, characteristic_path})
+                }
+            }
+        }
+
+        Err(_err) => return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "GATT characteristic resolution failed"))
+ 
+    }
+
+    Err(std::io::Error::new(std::io::ErrorKind::NotFound, "GATT characteristic not found"))
 }

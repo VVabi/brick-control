@@ -4,6 +4,8 @@ use std::collections::VecDeque;
 use std::error::Error;
 use crate::mqtt_wrapper::mqtt_thread::MqttStrMessage;
 use crate::protocol::Message;
+use crate::protocol::messages::*;
+use crate::protocol::BleSerializationExt;
 use crate::library::types::*;
 use std::collections::HashMap;
 
@@ -51,11 +53,42 @@ impl Messenger for MqttMessenger<'_> {
 
         let mut ret = Vec::new();
 
-        while !list.is_empty() {
-            let msg = list.pop_front().expect("WTF? list cannot be empty");
-            ret.push(msg.payload);
+        for msg in list {
+            ret.push(msg.payload.clone());
         }
 
         ret
+    }
+
+    fn receive_ble_message(self: &mut Self) -> Result<Box<dyn BleSerializationExt>, bool> { //TODO implement custom error for return value
+        let x = self.rx.try_recv();
+
+        match x {
+            Ok(v) => {
+                log::debug!("Incoming message; Topic: {} Payload: {}", v.topic, v.payload);
+                if v.topic == SetMotorPwm::get_topic() {
+                    let meas = serde_json::from_str::<SetMotorPwm>(&v.payload);
+                    match meas {
+                        Ok(b) => return Ok(Box::new(b)),
+                        Err(v) => {
+                            log::error!("Json decoding failed: {:?}", v);
+                            return Err(true)
+                        }
+                    }
+                } else if v.topic == MotorGoToPosition::get_topic() {
+                    let meas = serde_json::from_str::<MotorGoToPosition>(&v.payload);
+                    match meas {
+                        Ok(b) => return Ok(Box::new(b)),
+                        Err(v) => {
+                            log::error!("Json decoding failed: {:?}", v);
+                            return Err(true)
+                        }
+                    }
+                } else {
+                    return Err(true)
+                }
+            }
+            Err(_e) => return Err(false)
+        }
     }
 }
