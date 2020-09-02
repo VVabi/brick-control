@@ -21,17 +21,68 @@ fn serialize_ble_cmd(cmd: &dyn ble_ext::BleSerializationExt) -> Vec<u8> {
     ret
 }
 
+fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Error>> {
+    println!("{}", id);
+    match id {
+        0x01 => {
+            if values.len() >= 3 && values[0] == 6 { 
+                let status = values[2];
+
+                return Ok(Box::new(messages::BatteryStatus { charging_state: status }));
+
+            } else {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
+            }
+        }
+        0x45 => {
+            if values.len() >= 5  { 
+                let t = [values[1], values[2], values[3], values[4]];
+                let position = i32::from_le_bytes(t);
+                return Ok(Box::new(messages::MotorPositionUpdate { position: position , port: values[0]}));
+            } else {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
+            }
+        }
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "id not found")))
+    }
+}
+
+
 impl BleBrickDevice {
+    fn handle_incoming_message(&self, event: &BluetoothEvent, messenger: &mut dyn Messenger) -> Result<(), Box<dyn Error>> {
+        match event {
+            BluetoothEvent::Value { object_path: _, value } => {
+                let len = value.len();
+                if len >= 3 {
+                    let id = value[2];
+                    let res = parse_response(id, &value[3..len])?;
+                    messenger.publish_message(&*res)?;
+                } else {
+                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "Could not parse header, too short")))
+                }
+            }   
+            _ => ()
+        }
+
+        Ok(())
+    }
+
     pub fn run_loop(&self, messenger: &mut dyn Messenger) {  
         let characteristic = BluetoothGATTCharacteristic::new(&self.session, self.characteristic_path.clone());
         characteristic.start_notify().unwrap();
         loop {
             for event in self.session.incoming(1).map(BluetoothEvent::from) {
                 match event {
-                    Some(x) => log::debug!("event {:?}", x),
-                    None    => (),
+                    Some(x) => {
+                            log::debug!("BLE RECEIVE {:?}", x);
+                            let res = self.handle_incoming_message(&x, messenger);
+                            if let Err(e) = res {
+                                log::error!("Error in BLE receive: {:?}", e);
+                            }
+                        }
+                        None    => (),    
+                    }
                 }
-            }
 
             let mut cnt: u32 = 0;
 
@@ -43,7 +94,9 @@ impl BleBrickDevice {
                         cnt = cnt+1;
 
                         if cnt < 5 {
-                            characteristic.write_value(serialize_ble_cmd(&*x), None).unwrap()
+                            let data = serialize_ble_cmd(&*x);
+                            log::debug!("BLE WRITE: {:?}", data);
+                            characteristic.write_value(data, None).unwrap();
                         } else {
                             log::error!("too many incoming commands, discarding to keep communication to hub alive");
                         }
@@ -58,6 +111,7 @@ impl BleBrickDevice {
         }
     }
 }
+
 
 
 pub fn init_ble_communication() -> Result<BleBrickDevice, Box<dyn Error>> {

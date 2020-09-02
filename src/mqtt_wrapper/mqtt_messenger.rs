@@ -84,6 +84,26 @@ impl Messenger for MqttMessenger<'_> {
                             return Err(true)
                         }
                     }
+                } else if v.topic == RequestBatteryStatus::get_topic() {
+                    let meas = serde_json::from_str::<RequestBatteryStatus>(&v.payload);
+                    match meas {
+                        Ok(b) => return Ok(Box::new(b)),
+                        Err(v) => {
+                            log::error!("Json decoding failed: {:?}", v);
+                            return Err(true)
+                        }
+                    }
+                    
+                } else if v.topic == EnableModeUpdates::get_topic() {
+                    let meas = serde_json::from_str::<EnableModeUpdates>(&v.payload);
+                    match meas {
+                        Ok(b) => return Ok(Box::new(b)),
+                        Err(v) => {
+                            log::error!("Json decoding failed: {:?}", v);
+                            return Err(true)
+                        }
+                    }
+                    
                 } else {
                     return Err(true)
                 }

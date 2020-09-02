@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 pub enum MessageUniqueId {
 SetMotorPwmUniqueId,
 MotorGoToPositionUniqueId,
+EnableModeUpdatesUniqueId,
+MotorPositionUpdateUniqueId,
+RequestBatteryStatusUniqueId,
+BatteryStatusUniqueId,
 }
 
 pub trait Message {
@@ -79,5 +83,118 @@ impl StaticMessageInfo for MotorGoToPosition {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct EnableModeUpdates {
+    pub port: u8,
+    pub mode: u8,
+    pub notifications_enabled: u8,
+    pub delta: u32
+}
 
+impl Message for EnableModeUpdates {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::EnableModeUpdatesUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/generic/set_mode_update".to_string();
+    }
+}
 
+impl StaticMessageInfo for EnableModeUpdates {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::EnableModeUpdatesUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/generic/set_mode_update".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MotorPositionUpdate {
+    pub position: i32,
+    pub port: u8
+}
+
+impl Message for MotorPositionUpdate {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::MotorPositionUpdateUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/motor/output/position_update".to_string();
+    }
+}
+
+impl StaticMessageInfo for MotorPositionUpdate {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::MotorPositionUpdateUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/motor/output/position_update".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RequestBatteryStatus {
+
+}
+
+impl Message for RequestBatteryStatus {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::RequestBatteryStatusUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/battery/request_status".to_string();
+    }
+}
+
+impl StaticMessageInfo for RequestBatteryStatus {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::RequestBatteryStatusUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/battery/request_status".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BatteryStatus {
+    pub charging_state: u8
+}
+
+impl Message for BatteryStatus {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::BatteryStatusUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/battery/status".to_string();
+    }
+}
+
+impl StaticMessageInfo for BatteryStatus {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::BatteryStatusUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/battery/status".to_string();
+    }
+}

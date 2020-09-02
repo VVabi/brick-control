@@ -32,3 +32,26 @@ impl BleSerializationExt for MotorGoToPosition {
         output.push(0 as u8);
     }
 }
+
+impl BleSerializationExt for EnableModeUpdates {
+    fn get_cmd_id(&self) -> u8 {
+        0x41 as u8
+    }
+    fn serialize(&self, output: &mut Vec<u8>) {
+        output.push(self.port);
+        output.push(self.mode);
+        output.extend_from_slice(&self.delta.to_le_bytes());
+        output.push(self.notifications_enabled);
+    }
+}
+
+impl BleSerializationExt for RequestBatteryStatus {
+    fn get_cmd_id(&self) -> u8 {
+        0x01 as u8
+    }
+
+    fn serialize(&self, output: &mut Vec<u8>) {
+        output.push(0x06);
+        output.push(0x05);
+    }
+}
