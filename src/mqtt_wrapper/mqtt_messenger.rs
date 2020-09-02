@@ -60,55 +60,29 @@ impl Messenger for MqttMessenger<'_> {
         ret
     }
 
-    fn receive_ble_message(self: &mut Self) -> Result<Box<dyn BleSerializationExt>, bool> { //TODO implement custom error for return value
+    fn receive_ble_message(self: &mut Self) -> Result<Option<Box<dyn BleSerializationExt>>, Box<dyn Error>> {
         let x = self.rx.try_recv();
 
         match x {
             Ok(v) => {
                 log::debug!("Incoming message; Topic: {} Payload: {}", v.topic, v.payload);
                 if v.topic == SetMotorPwm::get_topic() {
-                    let meas = serde_json::from_str::<SetMotorPwm>(&v.payload);
-                    match meas {
-                        Ok(b) => return Ok(Box::new(b)),
-                        Err(v) => {
-                            log::error!("Json decoding failed: {:?}", v);
-                            return Err(true)
-                        }
-                    }
+                    let meas = serde_json::from_str::<SetMotorPwm>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));
                 } else if v.topic == MotorGoToPosition::get_topic() {
-                    let meas = serde_json::from_str::<MotorGoToPosition>(&v.payload);
-                    match meas {
-                        Ok(b) => return Ok(Box::new(b)),
-                        Err(v) => {
-                            log::error!("Json decoding failed: {:?}", v);
-                            return Err(true)
-                        }
-                    }
+                    let meas = serde_json::from_str::<MotorGoToPosition>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));
                 } else if v.topic == RequestBatteryStatus::get_topic() {
-                    let meas = serde_json::from_str::<RequestBatteryStatus>(&v.payload);
-                    match meas {
-                        Ok(b) => return Ok(Box::new(b)),
-                        Err(v) => {
-                            log::error!("Json decoding failed: {:?}", v);
-                            return Err(true)
-                        }
-                    }
-                    
+                    let meas = serde_json::from_str::<RequestBatteryStatus>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));
                 } else if v.topic == EnableModeUpdates::get_topic() {
-                    let meas = serde_json::from_str::<EnableModeUpdates>(&v.payload);
-                    match meas {
-                        Ok(b) => return Ok(Box::new(b)),
-                        Err(v) => {
-                            log::error!("Json decoding failed: {:?}", v);
-                            return Err(true)
-                        }
-                    }
-                    
+                    let meas = serde_json::from_str::<EnableModeUpdates>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));
                 } else {
-                    return Err(true)
+                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Unknown topic")))
                 }
             }
-            Err(_e) => return Err(false)
+            Err(_e) => return Ok(None)
         }
     }
 }

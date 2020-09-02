@@ -22,7 +22,6 @@ fn serialize_ble_cmd(cmd: &dyn ble_ext::BleSerializationExt) -> Vec<u8> {
 }
 
 fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Error>> {
-    println!("{}", id);
     match id {
         0x01 => {
             if values.len() >= 3 && values[0] == 6 { 
@@ -43,7 +42,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
         }
-        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "id not found")))
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "id not found: ".to_string()+&id.to_string())))
     }
 }
 
@@ -91,20 +90,24 @@ impl BleBrickDevice {
 
                 match next {
                     Ok(x) => {
-                        cnt = cnt+1;
+                        match x {
+                            Some(v) => {
+                                cnt = cnt+1;
 
-                        if cnt < 5 {
-                            let data = serialize_ble_cmd(&*x);
-                            log::debug!("BLE WRITE: {:?}", data);
-                            characteristic.write_value(data, None).unwrap();
-                        } else {
-                            log::error!("too many incoming commands, discarding to keep communication to hub alive");
+                                if cnt < 5 {
+                                    let data = serialize_ble_cmd(&*v);
+                                    log::debug!("BLE WRITE: {:?}", data);
+                                    characteristic.write_value(data, None).unwrap();
+                                } else {
+                                    log::error!("too many incoming commands, discarding to keep communication to hub alive");                                
+                                }
+                            }
+                            None => break //No more commands available for now
                         }
-                    }
+
+                    } 
                     Err(v) => {
-                        if !v {
-                            break;
-                        }
+                        log::error!("Serialization to BLE command failed: {:?}", v);
                     }
                 }
             }
