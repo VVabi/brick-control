@@ -15,14 +15,14 @@ pub struct MqttStrMessage {
 
 fn launch_mqtt_thread(tx: Sender<MqttStrMessage>, rx: Receiver<MqttStrMessage>, host: String, port: u32, subscriptions: Vec<String>) {
     let mut cli = mqtt::AsyncClient::new("tcp://".to_string()+&host+":"+&port.to_string()).unwrap_or_else(|err| {
-        println!("Error creating the client: {}", err);
+        log::error!("Cannot create mqtt client: {}", err);
         process::exit(1);
     });
     let conn_opts = mqtt::ConnectOptions::new();
 
     // Connect and wait for it to complete or fail
     if let Err(e) = cli.connect(conn_opts).wait() {
-        println!("Unable to connect: {:?}", e);
+        log::error!("Unable to connect: {:?}", e);
         process::exit(1);
     }
 
@@ -35,7 +35,7 @@ fn launch_mqtt_thread(tx: Sender<MqttStrMessage>, rx: Receiver<MqttStrMessage>, 
             let payload_str = msg.payload_str();
             let res = tx.send(MqttStrMessage {topic: String::from(topic), payload: String::from(payload_str) });
             if !res.is_ok() {
-                println!("Error during receive");
+                log::error!("Error during mqtt receive");
             }
         }
     });
@@ -47,7 +47,7 @@ fn launch_mqtt_thread(tx: Sender<MqttStrMessage>, rx: Receiver<MqttStrMessage>, 
                 let mqtt_msg = mqtt::Message::new(m.topic, m.payload, 0);
                 cli.publish(mqtt_msg);
             },
-            Err(e) => println!("Error in mqtt publish channel: {:?}", e),
+            Err(e) => log::error!("Mqtt publish channel: {:?}", e),
         }
     }
 }

@@ -106,7 +106,7 @@ pub fn init_ble_communication() -> Result<BleBrickDevice, Box<dyn Error>> {
             let char_path = x.clone();
             let service = BluetoothGATTService::new(&session, char_path.clone());
             let chars = service.get_gatt_characteristics().unwrap();
-            let characteristic_path = chars.first().unwrap().to_string();
+            let characteristic_path = chars.first().unwrap().to_string(); //TODO is this correct in all situations?
         
             return Ok(BleBrickDevice {session, characteristic_path})
         }
