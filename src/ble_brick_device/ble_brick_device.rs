@@ -47,7 +47,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 let port = values[0];
                 let event = values[1];
                 
-                let mut message = messages::AttachedIo { port: messages::translate_port_from_int(port as u32)?, event: event, info: Vec::new()};
+                let mut message = messages::AttachedIo { port_id: port, event: event, info: Vec::new()};
                 if event == 1 && values.len() >= 12 {
                     let type_id = u16::from_le_bytes([values[2], values[3]]) as u32;
                     let hw_rev  = i32::from_le_bytes([values[4], values[5], values[6], values[7]]);

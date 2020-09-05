@@ -303,7 +303,7 @@ impl StaticMessageInfo for AttachmentInfo {
 
 #[derive(Serialize, Deserialize)]
 pub struct AttachedIo {
-    pub port: Port,
+    pub port_id: u8,
     pub event: u8,
     pub info: Vec<AttachmentInfo>
 }
