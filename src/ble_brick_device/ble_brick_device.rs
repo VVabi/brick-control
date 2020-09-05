@@ -22,8 +22,8 @@ fn serialize_ble_cmd(cmd: &dyn ble_ext::BleSerializationExt) -> Vec<u8> {
 }
 
 fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Error>> {
-    match id {
-        0x01 => {
+    match translate_blemessagetype_from_int(id as u32)? {
+        BleMessageType::HubProperties => {
             if values.len() >= 3 && values[0] == 6 { 
                 let status = values[2];
 
@@ -33,11 +33,29 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
         }
-        0x45 => {
+        BleMessageType::PortValue => {
             if values.len() >= 5  { 
                 let t = [values[1], values[2], values[3], values[4]];
                 let position = i32::from_le_bytes(t);
-                return Ok(Box::new(messages::MotorPositionUpdate { position: position , port: values[0]}));
+                return Ok(Box::new(messages::MotorPositionUpdate { position: position , port: messages::translate_port_from_int(values[0] as u32)?}));
+            } else {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
+            }
+        }
+        BleMessageType::HubAttached => {
+            if values.len() >= 2  { 
+                let port = values[0];
+                let event = values[1];
+                
+                let mut message = messages::AttachedIo { port: messages::translate_port_from_int(port as u32)?, event: event, info: Vec::new()};
+                if event == 1 && values.len() >= 12 {
+                    let type_id = u16::from_le_bytes([values[2], values[3]]) as u32;
+                    let hw_rev  = i32::from_le_bytes([values[4], values[5], values[6], values[7]]);
+                    let sw_rev  = i32::from_le_bytes([values[8], values[9], values[10], values[11]]);
+                    message.info.push(messages::AttachmentInfo {type_id : type_id, hw_rev : hw_rev, sw_rev : sw_rev});
+                }
+
+                return Ok(Box::new(message));
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
@@ -123,20 +141,21 @@ pub fn init_ble_communication() -> Result<BleBrickDevice, Box<dyn Error>> {
 
     let device_list = adapter.get_device_list();
 
-    let mut name = "".to_string();
+    let mut path = "".to_string();
     let mut found = false;
     for d in device_list {
         for x in d {
             let device = BluetoothDevice::new(&session, x.clone());
+            let local_name = device.get_name().unwrap_or_default();
             log::info!(
                 "{} {:?} {:?}",
                 device.get_id(),
                 device.get_address()?,
-                device.get_name()?
+                local_name
             );
 
-            if device.get_name()? == "Technic Hub" {
-                name = x.clone();
+            if local_name == "Technic Hub" {
+                path = x.clone();
                 found = true;
             }
         }
@@ -146,11 +165,11 @@ pub fn init_ble_communication() -> Result<BleBrickDevice, Box<dyn Error>> {
         return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Technic Hub not found")));
     }
 
-    let device = BluetoothDevice::new(&session, name.clone());
-    let result = device.connect(1000);
+    let device = BluetoothDevice::new(&session, path.clone());
+    let result = device.connect(10000);
 
-    if let Err(_err) = result {
-        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Could not connect")));
+    if let Err(err) = result {
+        return Err(err);
     }
 
     let res = device.get_gatt_services()?;

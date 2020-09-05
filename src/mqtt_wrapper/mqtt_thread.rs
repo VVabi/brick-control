@@ -57,7 +57,7 @@ pub fn launch_mqtt(host: String, port: u32, subscriptions: Vec<String>) -> (Send
 
     let (tx, rx) = channel();
     let (tx_publish, rx_publish) = channel();
-    spawn(move || launch_mqtt_thread(tx, rx_publish, host, port, subscriptions));
+    spawn(move || launch_mqtt_thread(tx, rx_publish, host, port, subscriptions)); //TODO we should wait after this until mqtt connection is established
 
     (tx_publish, rx)
 }

@@ -1,15 +1,57 @@
 extern crate serde_json;
 extern crate serde;
+use std::error::Error;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum BleMessageType{
+    HubProperties=0x01,
+    PortInputFormatSetup=0x41,
+    PortOutputCommand=0x81,
+    PortValue=0x45,
+    HubAttached=0x04,
+}
+
+pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, Box<dyn Error>> {
+    match input {
+        0x01=> Ok(BleMessageType::HubProperties),
+        0x41=> Ok(BleMessageType::PortInputFormatSetup),
+        0x81=> Ok(BleMessageType::PortOutputCommand),
+        0x45=> Ok(BleMessageType::PortValue),
+        0x04=> Ok(BleMessageType::HubAttached),
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType")))
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum Port{
+    A=0,
+    B=1,
+    C=2,
+    D=3,
+}
+
+pub fn translate_port_from_int(input: u32) -> Result<Port, Box<dyn Error>> {
+    match input {
+        0=> Ok(Port::A),
+        1=> Ok(Port::B),
+        2=> Ok(Port::C),
+        3=> Ok(Port::D),
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownPort")))
+    }
+}
 
 #[derive(Debug)]
 pub enum MessageUniqueId {
-SetMotorPwmUniqueId,
-MotorGoToPositionUniqueId,
-EnableModeUpdatesUniqueId,
-MotorPositionUpdateUniqueId,
-RequestBatteryStatusUniqueId,
-BatteryStatusUniqueId,
+    SetMotorPwmUniqueId,
+    SetMotorSpeedUniqueId,
+    MotorGoToPositionUniqueId,
+    EnableModeUpdatesUniqueId,
+    MotorPositionUpdateUniqueId,
+    RequestBatteryStatusUniqueId,
+    BatteryStatusUniqueId,
+    AttachmentInfoUniqueId,
+    AttachedIoUniqueId,
 }
 
 pub trait Message {
@@ -26,7 +68,7 @@ pub trait StaticMessageInfo {
 #[derive(Serialize, Deserialize)]
 pub struct SetMotorPwm {
     pub pwm: i8,
-    pub port: u8
+    pub port: Port
 }
 
 impl Message for SetMotorPwm {
@@ -53,9 +95,39 @@ impl StaticMessageInfo for SetMotorPwm {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SetMotorSpeed {
+    pub pwm: i8,
+    pub port: Port,
+    pub max_power: u8
+}
+
+impl Message for SetMotorSpeed {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::SetMotorSpeedUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/motor/set_speed".to_string();
+    }
+}
+
+impl StaticMessageInfo for SetMotorSpeed {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::SetMotorSpeedUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/motor/set_speed".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct MotorGoToPosition {
     pub pwm: i8,
-    pub port: u8,
+    pub port: Port,
     pub max_power: u8,
     pub target_angle: i32
 }
@@ -85,7 +157,7 @@ impl StaticMessageInfo for MotorGoToPosition {
 
 #[derive(Serialize, Deserialize)]
 pub struct EnableModeUpdates {
-    pub port: u8,
+    pub port: Port,
     pub mode: u8,
     pub notifications_enabled: u8,
     pub delta: u32
@@ -117,7 +189,7 @@ impl StaticMessageInfo for EnableModeUpdates {
 #[derive(Serialize, Deserialize)]
 pub struct MotorPositionUpdate {
     pub position: i32,
-    pub port: u8
+    pub port: Port
 }
 
 impl Message for MotorPositionUpdate {
@@ -198,3 +270,65 @@ impl StaticMessageInfo for BatteryStatus {
         return "brickcontrol/battery/status".to_string();
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct AttachmentInfo {
+    pub type_id: u32,
+    pub hw_rev: i32,
+    pub sw_rev: i32
+}
+
+impl Message for AttachmentInfo {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::AttachmentInfoUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "unused".to_string();
+    }
+}
+
+impl StaticMessageInfo for AttachmentInfo {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::AttachmentInfoUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "unused".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AttachedIo {
+    pub port: Port,
+    pub event: u8,
+    pub info: Vec<AttachmentInfo>
+}
+
+impl Message for AttachedIo {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::AttachedIoUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/io/connection_update".to_string();
+    }
+}
+
+impl StaticMessageInfo for AttachedIo {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::AttachedIoUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/io/connection_update".to_string();
+    }
+}
+
+
