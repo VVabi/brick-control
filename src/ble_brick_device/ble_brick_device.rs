@@ -60,6 +60,16 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
         }
+        BleMessageType::PortOutputCommandFeedback => {
+            if values.len() >= 2  {
+                let port        = values[0];
+                let flags       = values[1];
+                let message     = messages::MotorCommandFeedback { port : messages::translate_port_from_int(port as u32)?, flags: flags};
+                return Ok(Box::new(message));
+            } else {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
+            }        
+        }
         _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "id not found: ".to_string()+&id.to_string())))
     }
 }

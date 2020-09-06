@@ -27,7 +27,7 @@ fn launch_mqtt_thread(tx: Sender<MqttStrMessage>, rx: Receiver<MqttStrMessage>, 
     }
 
     for topic in subscriptions {
-        cli.subscribe(&topic, 0);
+        cli.subscribe(topic, 0);
     }
     cli.set_message_callback(move |_cli,msg| {
         if let Some(msg) = msg {

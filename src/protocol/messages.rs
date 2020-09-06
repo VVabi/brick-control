@@ -8,6 +8,7 @@ pub enum BleMessageType{
     HubProperties=0x01,
     PortInputFormatSetup=0x41,
     PortOutputCommand=0x81,
+    PortOutputCommandFeedback=0x82,
     PortValue=0x45,
     HubAttached=0x04,
 }
@@ -17,6 +18,7 @@ pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, B
         0x01=> Ok(BleMessageType::HubProperties),
         0x41=> Ok(BleMessageType::PortInputFormatSetup),
         0x81=> Ok(BleMessageType::PortOutputCommand),
+        0x82=> Ok(BleMessageType::PortOutputCommandFeedback),
         0x45=> Ok(BleMessageType::PortValue),
         0x04=> Ok(BleMessageType::HubAttached),
         _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType")))
@@ -46,6 +48,7 @@ pub enum MessageUniqueId {
     SetMotorPwmUniqueId,
     SetMotorSpeedUniqueId,
     MotorGoToPositionUniqueId,
+    MotorCommandFeedbackUniqueId,
     EnableModeUpdatesUniqueId,
     MotorPositionUpdateUniqueId,
     RequestBatteryStatusUniqueId,
@@ -152,6 +155,35 @@ impl StaticMessageInfo for MotorGoToPosition {
     }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/go_to_position".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MotorCommandFeedback {
+    pub port: Port,
+    pub flags: u8
+}
+
+impl Message for MotorCommandFeedback {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::MotorCommandFeedbackUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/motor/output/command_feedback".to_string();
+    }
+}
+
+impl StaticMessageInfo for MotorCommandFeedback {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::MotorCommandFeedbackUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/motor/output/command_feedback".to_string();
     }
 }
 
