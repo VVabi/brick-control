@@ -9,7 +9,7 @@ use mqtt_wrapper::mqtt_messenger::MqttMessenger;
 
 fn main() {
     env_logger::init();
-    let subscriptions = vec![messages::SetMotorPwm::get_topic(), messages::MotorGoToPosition::get_topic(), messages::EnableModeUpdates::get_topic(), messages::RequestBatteryStatus::get_topic(), messages::SetMotorSpeed::get_topic()];
+    let subscriptions = vec![messages::SetMotorPwm::get_topic(), messages::MotorGoToPosition::get_topic(), messages::EnableModeUpdates::get_topic(), messages::RequestBatteryStatus::get_topic(), messages::SetMotorSpeed::get_topic(), messages::PortInformationRequest::get_topic()];
     let (tx, rx) = launch_mqtt("localhost".to_string(), 1883, subscriptions);
     let mut mqtt_messenger = MqttMessenger::new(&tx, &rx);
     let device = ble_brick_device::init_ble_communication().unwrap();

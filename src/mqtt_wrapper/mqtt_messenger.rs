@@ -81,6 +81,9 @@ impl Messenger for MqttMessenger<'_> {
                 } else if v.topic == SetMotorSpeed::get_topic() {
                     let meas = serde_json::from_str::<SetMotorSpeed>(&v.payload)?;
                     return Ok(Some(Box::new(meas)));    
+                } else if v.topic == PortInformationRequest::get_topic() {
+                    let meas = serde_json::from_str::<PortInformationRequest>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));    
                 } else {
                     return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Unknown topic")))
                 }

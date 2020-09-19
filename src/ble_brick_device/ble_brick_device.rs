@@ -122,7 +122,7 @@ impl BleBrickDevice {
                             Some(v) => {
                                 cnt = cnt+1;
 
-                                if cnt < 5 {
+                                if cnt < 10 {
                                     let data = serialize_ble_cmd(&*v);
                                     log::debug!("BLE WRITE: {:?}", data);
                                     characteristic.write_value(data, None).unwrap();

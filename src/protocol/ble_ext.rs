@@ -70,3 +70,14 @@ impl BleSerializationExt for SetMotorSpeed {
         output.push(0);
     }
 }
+
+impl BleSerializationExt for PortInformationRequest {
+    fn get_cmd_id(&self) -> u8 {
+        BleMessageType::PortInformationRequest as u8
+    }
+
+    fn serialize(&self, output: &mut Vec<u8>) {
+        output.push(self.port_id);
+        output.push(0x00);
+    }
+}

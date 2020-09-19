@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum BleMessageType{
     HubProperties=0x01,
+    PortInformationRequest=0x21,
     PortInputFormatSetup=0x41,
     PortOutputCommand=0x81,
     PortOutputCommandFeedback=0x82,
@@ -16,6 +17,7 @@ pub enum BleMessageType{
 pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, Box<dyn Error>> {
     match input {
         0x01=> Ok(BleMessageType::HubProperties),
+        0x21=> Ok(BleMessageType::PortInformationRequest),
         0x41=> Ok(BleMessageType::PortInputFormatSetup),
         0x81=> Ok(BleMessageType::PortOutputCommand),
         0x82=> Ok(BleMessageType::PortOutputCommandFeedback),
@@ -55,6 +57,7 @@ pub enum MessageUniqueId {
     BatteryStatusUniqueId,
     AttachmentInfoUniqueId,
     AttachedIoUniqueId,
+    PortInformationRequestUniqueId,
 }
 
 pub trait Message {
@@ -360,6 +363,34 @@ impl StaticMessageInfo for AttachedIo {
     }
     fn get_topic() -> std::string::String {
         return "brickcontrol/io/connection_update".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PortInformationRequest {
+    pub port_id: u8
+}
+
+impl Message for PortInformationRequest {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::PortInformationRequestUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/generic/read_port".to_string();
+    }
+}
+
+impl StaticMessageInfo for PortInformationRequest {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::PortInformationRequestUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/generic/read_port".to_string();
     }
 }
 
