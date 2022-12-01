@@ -194,20 +194,22 @@ pub fn init_ble_communication(mac: Option<&str>) -> Result<BleBrickDevice, Box<d
     // Sometimes (usually on the first connect), the below call to get_gatt_services() returns an empty list without an error.AttachmentInfo
     // Looks like a sort of race condition in the device? Waiting first seems to help a lot at least
     // --------------------------------
-    thread::sleep(time::Duration::from_millis(500));
-    let res = device.get_gatt_services()?;
+    for _ in 0..10 {
+        thread::sleep(time::Duration::from_millis(500));
+        let res = device.get_gatt_services()?;
 
-    for x in res {
-        let service = BluetoothGATTService::new(&session, x.clone());
-        let uuid = service.get_uuid().unwrap();
-        log::info!("Found uuid {:?}", uuid);
-        if uuid == "00001623-1212-efde-1623-785feabcd123" {
-            let char_path = x.clone();
-            let service = BluetoothGATTService::new(&session, char_path.clone());
-            let chars = service.get_gatt_characteristics().unwrap();
-            let characteristic_path = chars.first().unwrap().to_string(); //TODO is this correct in all situations?
-        
-            return Ok(BleBrickDevice {session, characteristic_path})
+        for x in res {
+            let service = BluetoothGATTService::new(&session, x.clone());
+            let uuid = service.get_uuid().unwrap();
+            log::info!("Found uuid {:?}", uuid);
+            if uuid == "00001623-1212-efde-1623-785feabcd123" {
+                let char_path = x.clone();
+                let service = BluetoothGATTService::new(&session, char_path.clone());
+                let chars = service.get_gatt_characteristics().unwrap();
+                let characteristic_path = chars.first().unwrap().to_string(); //TODO is this correct in all situations?
+            
+                return Ok(BleBrickDevice {session, characteristic_path})
+            }
         }
     }
 

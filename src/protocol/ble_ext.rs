@@ -78,6 +78,6 @@ impl BleSerializationExt for PortInformationRequest {
 
     fn serialize(&self, output: &mut Vec<u8>) {
         output.push(self.port_id);
-        output.push(0x00);
+        output.push(0x01);
     }
 }

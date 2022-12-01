@@ -23,7 +23,7 @@ pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, B
         0x82=> Ok(BleMessageType::PortOutputCommandFeedback),
         0x45=> Ok(BleMessageType::PortValue),
         0x04=> Ok(BleMessageType::HubAttached),
-        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType")))
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType: ".to_string()+&input.to_string())))
     }
 }
 
