@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::protocol::messages::Message;
+use crate::protocol::motor_messages::Message;
 use crate::protocol::ble_ext::BleSerializationExt;
 
 pub trait Messenger {

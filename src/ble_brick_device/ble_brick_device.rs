@@ -29,7 +29,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
             if values.len() >= 3 && values[0] == 6 { 
                 let status = values[2];
 
-                return Ok(Box::new(messages::BatteryStatus { charging_state: status }));
+                return Ok(Box::new(motor_messages::BatteryStatus { charging_state: status }));
 
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
@@ -39,7 +39,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
             if values.len() >= 5  { 
                 let t = [values[1], values[2], values[3], values[4]];
                 let position = i32::from_le_bytes(t);
-                return Ok(Box::new(messages::MotorPositionUpdate { position: position , port: messages::translate_port_from_int(values[0] as u32)?}));
+                return Ok(Box::new(motor_messages::MotorPositionUpdate { position: position , port: motor_messages::translate_port_from_int(values[0] as u32)?}));
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
@@ -49,12 +49,12 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 let port = values[0];
                 let event = values[1];
                 
-                let mut message = messages::AttachedIo { port_id: port, event: event, info: Vec::new()};
+                let mut message = motor_messages::AttachedIo { port_id: port, event: event, info: Vec::new()};
                 if event == 1 && values.len() >= 12 {
                     let type_id = u16::from_le_bytes([values[2], values[3]]) as u32;
                     let hw_rev  = i32::from_le_bytes([values[4], values[5], values[6], values[7]]);
                     let sw_rev  = i32::from_le_bytes([values[8], values[9], values[10], values[11]]);
-                    message.info.push(messages::AttachmentInfo {type_id : type_id, hw_rev : hw_rev, sw_rev : sw_rev});
+                    message.info.push(motor_messages::AttachmentInfo {type_id : type_id, hw_rev : hw_rev, sw_rev : sw_rev});
                 }
 
                 return Ok(Box::new(message));
@@ -66,7 +66,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
             if values.len() >= 2  {
                 let port        = values[0];
                 let flags       = values[1];
-                let message     = messages::MotorCommandFeedback { port : messages::translate_port_from_int(port as u32)?, flags: flags};
+                let message     = motor_messages::MotorCommandFeedback { port : motor_messages::translate_port_from_int(port as u32)?, flags: flags};
                 return Ok(Box::new(message));
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));

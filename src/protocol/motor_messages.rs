@@ -23,7 +23,7 @@ pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, B
         0x82=> Ok(BleMessageType::PortOutputCommandFeedback),
         0x45=> Ok(BleMessageType::PortValue),
         0x04=> Ok(BleMessageType::HubAttached),
-        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType: ".to_string()+&input.to_string())))
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType")))
     }
 }
 
@@ -61,14 +61,14 @@ pub enum MessageUniqueId {
 }
 
 pub trait Message {
- fn get_unique_id_dyn(&self) -> MessageUniqueId;
- fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error>;
- fn get_topic_dyn(&self) -> std::string::String;
+    fn get_unique_id_dyn(&self) -> MessageUniqueId;
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error>;
+    fn get_topic_dyn(&self) -> std::string::String;
 }
 
 pub trait StaticMessageInfo {
- fn get_unique_id() -> MessageUniqueId;
- fn get_topic() -> std::string::String;
+    fn get_unique_id() -> MessageUniqueId;
+    fn get_topic() -> std::string::String;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -393,5 +393,4 @@ impl StaticMessageInfo for PortInformationRequest {
         return "brickcontrol/generic/read_port".to_string();
     }
 }
-
 

@@ -1,4 +1,4 @@
-use crate::messages::*;
+use crate::motor_messages::*;
 
 pub trait BleSerializationExt {
     fn get_cmd_id(&self) -> u8;

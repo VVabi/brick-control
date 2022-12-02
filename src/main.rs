@@ -30,7 +30,7 @@ fn main() {
     let mac = matches.value_of("mac");
 
     env_logger::init();
-    let subscriptions = vec![messages::SetMotorPwm::get_topic(), messages::MotorGoToPosition::get_topic(), messages::EnableModeUpdates::get_topic(), messages::RequestBatteryStatus::get_topic(), messages::SetMotorSpeed::get_topic(), messages::PortInformationRequest::get_topic()];
+    let subscriptions = vec![motor_messages::SetMotorPwm::get_topic(), motor_messages::MotorGoToPosition::get_topic(), motor_messages::EnableModeUpdates::get_topic(), motor_messages::RequestBatteryStatus::get_topic(), motor_messages::SetMotorSpeed::get_topic(), motor_messages::PortInformationRequest::get_topic()];
     let (tx, rx) = launch_mqtt("localhost".to_string(), 1883, subscriptions, prefix.to_string());
     let mut mqtt_messenger = MqttMessenger::new(&tx, &rx);
     let device = ble_brick_device::init_ble_communication(mac).unwrap();

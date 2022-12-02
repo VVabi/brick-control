@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::error::Error;
 use crate::mqtt_wrapper::mqtt_thread::MqttStrMessage;
 use crate::protocol::Message;
-use crate::protocol::messages::*;
+use crate::protocol::motor_messages::*;
 use crate::protocol::BleSerializationExt;
 use crate::library::types::*;
 use std::collections::HashMap;

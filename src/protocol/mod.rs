@@ -1,4 +1,4 @@
-pub use self::messages::*;
+pub use self::motor_messages::*;
 pub use self::ble_ext::*;
-pub mod messages;
+pub mod motor_messages;
 pub mod ble_ext;
