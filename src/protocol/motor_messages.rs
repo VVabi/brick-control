@@ -47,7 +47,9 @@ pub fn translate_port_from_int(input: u32) -> Result<Port, Box<dyn Error>> {
 
 #[derive(Debug)]
 pub enum MessageUniqueId {
+    RegisterMotorUniqueId,
     SetMotorPwmUniqueId,
+    SetMotorPwmMultipleUniqueId,
     SetMotorSpeedUniqueId,
     MotorGoToPositionUniqueId,
     MotorCommandFeedbackUniqueId,
@@ -69,6 +71,34 @@ pub trait Message {
 pub trait StaticMessageInfo {
     fn get_unique_id() -> MessageUniqueId;
     fn get_topic() -> std::string::String;
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RegisterMotor {
+    pub port: Port
+}
+
+impl Message for RegisterMotor {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::RegisterMotorUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/motor/register".to_string();
+    }
+}
+
+impl StaticMessageInfo for RegisterMotor {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::RegisterMotorUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/motor/register".to_string();
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -101,8 +131,36 @@ impl StaticMessageInfo for SetMotorPwm {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SetMotorPwmMultiple {
+    pub motor_pwms: Vec<SetMotorPwm>
+}
+
+impl Message for SetMotorPwmMultiple {
+    #[inline]
+    fn get_unique_id_dyn(&self) -> MessageUniqueId {
+        MessageUniqueId::SetMotorPwmMultipleUniqueId
+    }
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/motor/pwm_multiple".to_string();
+    }
+}
+
+impl StaticMessageInfo for SetMotorPwmMultiple {
+    #[inline]
+    fn get_unique_id() -> MessageUniqueId {
+        MessageUniqueId::SetMotorPwmMultipleUniqueId
+    }
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/motor/pwm_multiple".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct SetMotorSpeed {
-    pub pwm: i8,
+    pub speed: i8,
     pub port: Port,
     pub max_power: u8
 }
@@ -132,7 +190,7 @@ impl StaticMessageInfo for SetMotorSpeed {
 
 #[derive(Serialize, Deserialize)]
 pub struct MotorGoToPosition {
-    pub pwm: i8,
+    pub speed: i8,
     pub port: Port,
     pub max_power: u8,
     pub target_angle: i32

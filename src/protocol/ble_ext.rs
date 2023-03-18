@@ -26,9 +26,9 @@ impl BleSerializationExt for MotorGoToPosition {
         output.push(1 as u8);
         output.push(0x0D as u8);
         output.extend_from_slice(&self.target_angle.to_le_bytes());
-        output.push(self.pwm as u8);
+        output.push(self.speed as u8);
         output.push(self.max_power as u8);
-        output.push(127 as u8);
+        output.push(126 as u8);
         output.push(0 as u8);
     }
 }
@@ -65,7 +65,7 @@ impl BleSerializationExt for SetMotorSpeed {
         output.push(self.port as u8);
         output.push(1 as u8);
         output.push(0x07 as u8);
-        output.push(self.pwm as u8);
+        output.push(self.speed as u8);
         output.push(self.max_power);
         output.push(0);
     }
