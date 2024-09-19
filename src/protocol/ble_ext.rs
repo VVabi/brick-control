@@ -81,3 +81,19 @@ impl BleSerializationExt for PortInformationRequest {
         output.push(0x01);
     }
 }
+
+impl BleSerializationExt for SetLedColor {
+    fn get_cmd_id(&self) -> u8 {
+        BleMessageType::PortOutputCommand as u8
+    }
+
+    fn serialize(&self, output: &mut Vec<u8>) {
+        output.push(50);
+        output.push(0x11);
+        output.push(0x51);
+        output.push(1);
+        output.push(self.red);
+        output.push(self.green);
+        output.push(self.blue);
+    }
+}

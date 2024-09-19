@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 use std::collections::VecDeque;
 use std::error::Error;
 use crate::mqtt_wrapper::mqtt_thread::MqttStrMessage;
-use crate::protocol::Message;
+use crate::protocol::protocol_core::{Message, StaticMessageInfo};
 use crate::protocol::motor_messages::*;
 use crate::protocol::BleSerializationExt;
 use crate::library::types::*;
@@ -83,6 +83,9 @@ impl Messenger for MqttMessenger<'_> {
                     return Ok(Some(Box::new(meas)));    
                 } else if v.topic == PortInformationRequest::get_topic() {
                     let meas = serde_json::from_str::<PortInformationRequest>(&v.payload)?;
+                    return Ok(Some(Box::new(meas)));
+                } else if v.topic == SetLedColor::get_topic() {
+                    let meas = serde_json::from_str::<SetLedColor>(&v.payload)?;
                     return Ok(Some(Box::new(meas)));    
                 } else {
                     return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Unknown topic")))

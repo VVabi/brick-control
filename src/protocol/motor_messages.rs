@@ -2,6 +2,7 @@ extern crate serde_json;
 extern crate serde;
 use std::error::Error;
 use serde::{Deserialize, Serialize};
+use crate::protocol_core::{Message, StaticMessageInfo};
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum BleMessageType{
@@ -33,6 +34,8 @@ pub enum Port{
     B=1,
     C=2,
     D=3,
+    LED=50,
+    TILT=99,
 }
 
 pub fn translate_port_from_int(input: u32) -> Result<Port, Box<dyn Error>> {
@@ -41,36 +44,10 @@ pub fn translate_port_from_int(input: u32) -> Result<Port, Box<dyn Error>> {
         1=> Ok(Port::B),
         2=> Ok(Port::C),
         3=> Ok(Port::D),
+        50=> Ok(Port::LED),
+        99=> Ok(Port::TILT),
         _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownPort")))
     }
-}
-
-#[derive(Debug)]
-pub enum MessageUniqueId {
-    RegisterMotorUniqueId,
-    SetMotorPwmUniqueId,
-    SetMotorPwmMultipleUniqueId,
-    SetMotorSpeedUniqueId,
-    MotorGoToPositionUniqueId,
-    MotorCommandFeedbackUniqueId,
-    EnableModeUpdatesUniqueId,
-    MotorPositionUpdateUniqueId,
-    RequestBatteryStatusUniqueId,
-    BatteryStatusUniqueId,
-    AttachmentInfoUniqueId,
-    AttachedIoUniqueId,
-    PortInformationRequestUniqueId,
-}
-
-pub trait Message {
-    fn get_unique_id_dyn(&self) -> MessageUniqueId;
-    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error>;
-    fn get_topic_dyn(&self) -> std::string::String;
-}
-
-pub trait StaticMessageInfo {
-    fn get_unique_id() -> MessageUniqueId;
-    fn get_topic() -> std::string::String;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,9 +57,6 @@ pub struct RegisterMotor {
 
 impl Message for RegisterMotor {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::RegisterMotorUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -93,9 +67,6 @@ impl Message for RegisterMotor {
 
 impl StaticMessageInfo for RegisterMotor {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::RegisterMotorUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/register".to_string();
     }
@@ -109,9 +80,6 @@ pub struct SetMotorPwm {
 
 impl Message for SetMotorPwm {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::SetMotorPwmUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -122,9 +90,6 @@ impl Message for SetMotorPwm {
 
 impl StaticMessageInfo for SetMotorPwm {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::SetMotorPwmUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/pwm".to_string();
     }
@@ -137,9 +102,6 @@ pub struct SetMotorPwmMultiple {
 
 impl Message for SetMotorPwmMultiple {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::SetMotorPwmMultipleUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -150,9 +112,6 @@ impl Message for SetMotorPwmMultiple {
 
 impl StaticMessageInfo for SetMotorPwmMultiple {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::SetMotorPwmMultipleUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/pwm_multiple".to_string();
     }
@@ -167,9 +126,6 @@ pub struct SetMotorSpeed {
 
 impl Message for SetMotorSpeed {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::SetMotorSpeedUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -180,9 +136,6 @@ impl Message for SetMotorSpeed {
 
 impl StaticMessageInfo for SetMotorSpeed {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::SetMotorSpeedUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/set_speed".to_string();
     }
@@ -198,9 +151,6 @@ pub struct MotorGoToPosition {
 
 impl Message for MotorGoToPosition {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::MotorGoToPositionUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -211,9 +161,6 @@ impl Message for MotorGoToPosition {
 
 impl StaticMessageInfo for MotorGoToPosition {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::MotorGoToPositionUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/go_to_position".to_string();
     }
@@ -227,9 +174,6 @@ pub struct MotorCommandFeedback {
 
 impl Message for MotorCommandFeedback {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::MotorCommandFeedbackUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -240,9 +184,6 @@ impl Message for MotorCommandFeedback {
 
 impl StaticMessageInfo for MotorCommandFeedback {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::MotorCommandFeedbackUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/output/command_feedback".to_string();
     }
@@ -258,9 +199,6 @@ pub struct EnableModeUpdates {
 
 impl Message for EnableModeUpdates {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::EnableModeUpdatesUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -271,9 +209,6 @@ impl Message for EnableModeUpdates {
 
 impl StaticMessageInfo for EnableModeUpdates {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::EnableModeUpdatesUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/generic/set_mode_update".to_string();
     }
@@ -287,9 +222,6 @@ pub struct MotorPositionUpdate {
 
 impl Message for MotorPositionUpdate {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::MotorPositionUpdateUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -300,11 +232,32 @@ impl Message for MotorPositionUpdate {
 
 impl StaticMessageInfo for MotorPositionUpdate {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::MotorPositionUpdateUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/motor/output/position_update".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TiltMeasurement {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32
+}
+
+impl Message for TiltMeasurement {
+    #[inline]
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/tilt/position_update".to_string();
+    }
+}
+
+impl StaticMessageInfo for TiltMeasurement {
+    #[inline]
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/tilt/position_update".to_string();
     }
 }
 
@@ -315,9 +268,6 @@ pub struct RequestBatteryStatus {
 
 impl Message for RequestBatteryStatus {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::RequestBatteryStatusUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -328,9 +278,6 @@ impl Message for RequestBatteryStatus {
 
 impl StaticMessageInfo for RequestBatteryStatus {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::RequestBatteryStatusUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/battery/request_status".to_string();
     }
@@ -343,9 +290,6 @@ pub struct BatteryStatus {
 
 impl Message for BatteryStatus {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::BatteryStatusUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -356,9 +300,6 @@ impl Message for BatteryStatus {
 
 impl StaticMessageInfo for BatteryStatus {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::BatteryStatusUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/battery/status".to_string();
     }
@@ -373,9 +314,6 @@ pub struct AttachmentInfo {
 
 impl Message for AttachmentInfo {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::AttachmentInfoUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -386,9 +324,6 @@ impl Message for AttachmentInfo {
 
 impl StaticMessageInfo for AttachmentInfo {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::AttachmentInfoUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "unused".to_string();
     }
@@ -403,9 +338,6 @@ pub struct AttachedIo {
 
 impl Message for AttachedIo {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::AttachedIoUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -416,9 +348,6 @@ impl Message for AttachedIo {
 
 impl StaticMessageInfo for AttachedIo {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::AttachedIoUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/io/connection_update".to_string();
     }
@@ -431,9 +360,6 @@ pub struct PortInformationRequest {
 
 impl Message for PortInformationRequest {
     #[inline]
-    fn get_unique_id_dyn(&self) -> MessageUniqueId {
-        MessageUniqueId::PortInformationRequestUniqueId
-    }
     fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
         serde_json::to_string(&self)
     }
@@ -444,11 +370,36 @@ impl Message for PortInformationRequest {
 
 impl StaticMessageInfo for PortInformationRequest {
     #[inline]
-    fn get_unique_id() -> MessageUniqueId {
-        MessageUniqueId::PortInformationRequestUniqueId
-    }
     fn get_topic() -> std::string::String {
         return "brickcontrol/generic/read_port".to_string();
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SetLedColor {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8
+}
+
+impl Message for SetLedColor {
+    // For this to work, you need to set the LED to mode 1 first:
+    // eg mosquitto_pub -t "brickcontrol/generic/set_mode_update" -m '{"notifications_enabled": 0, "delta": 0, "mode": 1, "port": "LED"}'
+    // Then the LED is off by default! But brick is still connected and new color can be set
+    #[inline]
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/led/set_color".to_string();
+    }
+}
+
+impl StaticMessageInfo for SetLedColor {
+    #[inline]
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/led/set_color".to_string();
+    }
+}
+
 

@@ -6,9 +6,11 @@ use blurz::bluetooth_gatt_service::BluetoothGATTService;
 use blurz::bluetooth_gatt_characteristic::BluetoothGATTCharacteristic;
 use blurz::bluetooth_event::BluetoothEvent;
 use crate::library::types::*;
+use crate::protocol::protocol_core::Message;
 use crate::protocol::*;
 use std::error::Error;
 
+use std::iter::Zip;
 use std::{thread, time};
 
 pub struct BleBrickDevice {
@@ -36,10 +38,16 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
             }
         }
         BleMessageType::PortValue => {
-            if values.len() >= 5  { 
+            let port = motor_messages::translate_port_from_int(values[0] as u32)?;
+            if (port as u8) < 4 {
                 let t = [values[1], values[2], values[3], values[4]];
                 let position = i32::from_le_bytes(t);
-                return Ok(Box::new(motor_messages::MotorPositionUpdate { position: position , port: motor_messages::translate_port_from_int(values[0] as u32)?}));
+                return Ok(Box::new(motor_messages::MotorPositionUpdate { position: position , port: port}));
+            } else if matches!(port, Port::TILT) {
+                let x: i32 = i16::from_le_bytes([values[1], values[2]]) as i32;
+                let y: i32 = i16::from_le_bytes([values[3], values[4]]) as i32;
+                let z: i32 = i16::from_le_bytes([values[5], values[6]]) as i32;
+                return Ok(Box::new(motor_messages::TiltMeasurement { x: x, y: y, z: z}));
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
