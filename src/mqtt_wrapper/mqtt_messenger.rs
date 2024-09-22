@@ -42,7 +42,11 @@ impl<'a> MqttMessenger<'a> {
         } else if v.topic == SetLedColor::get_topic() {
             let meas = serde_json::from_str::<SetLedColor>(&v.payload)?;
             return Ok(Box::new(meas));    
-        } else {
+        } else if v.topic == RequestAttachedIos::get_topic() {
+            let meas = serde_json::from_str::<RequestAttachedIos>(&v.payload)?;
+            return Ok(Box::new(meas));    
+        } 
+        else {
             return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "Unknown topic")))
         }
     }
@@ -76,11 +80,17 @@ impl<'a> MqttMessenger<'a> {
 }
 
 impl Messenger for MqttMessenger<'_> {
-    fn publish_message(self: &Self, m: &dyn Message) -> Result<(), Box<dyn Error>> {
+    fn publish_message(self: &mut Self, m: &dyn Message) -> Result<(), Box<dyn Error>> {
         let mut publish = true;
 
-        for listener in &self.listeners {
-            publish = publish && listener.on_upstream_message(&*m);
+        for listener in &mut self.listeners {
+            let res = listener.on_upstream_message(&*m);
+            publish = publish && res.0;
+
+            if let Some(msg) = res.1 {
+                let result = msg.to_json()?;
+                self.tx.send(MqttStrMessage { topic: msg.get_topic_dyn(), payload: result })?;
+            }
         }
     
         if publish {
@@ -97,8 +107,13 @@ impl Messenger for MqttMessenger<'_> {
             Ok(m) => {
                 let message = self.parse_message(&m)?;
                 let mut send_downstream = true;
-                for listener in &self.listeners {
-                    send_downstream = send_downstream && listener.on_downstream_message(&*message);
+                for listener in &mut self.listeners {
+                    let res = listener.on_downstream_message(&*message);
+                    send_downstream = send_downstream && res.0;
+                    if let Some(msg) = res.1 {
+                        let result = msg.to_json()?;
+                        self.tx.send(MqttStrMessage { topic: msg.get_topic_dyn(), payload: result })?;
+                    }
                 }
                 if send_downstream {
                     let result = self.parse_message_ble(&m)?;

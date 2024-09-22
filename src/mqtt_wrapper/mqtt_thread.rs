@@ -36,6 +36,8 @@ fn launch_mqtt_thread(tx: Sender<MqttStrMessage>, rx: Receiver<MqttStrMessage>, 
         }
     }
     let prefix_full = if prefix.is_empty() { prefix.clone() } else { prefix.clone()+&"/".to_string() };
+
+
     cli.set_message_callback(move |_cli,msg| {
         if let Some(msg) = msg {
             let topic = msg.topic();

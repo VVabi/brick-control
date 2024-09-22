@@ -6,7 +6,7 @@ mod listeners;
 
 use crate::protocol::*;
 use crate::protocol::protocol_core::*;
-use listeners::PrintListener;
+use listeners::AttachedIOListener;
 use mqtt_wrapper::mqtt_thread::launch_mqtt;
 use mqtt_wrapper::mqtt_messenger::MqttMessenger;
 use clap::{Arg, App};
@@ -39,9 +39,10 @@ fn main() {
     motor_messages::RequestBatteryStatus::get_topic(), 
     motor_messages::SetMotorSpeed::get_topic(),
     motor_messages::PortInformationRequest::get_topic(),
-    motor_messages::SetLedColor::get_topic(),];
+    motor_messages::SetLedColor::get_topic(),
+    motor_messages::RequestAttachedIos::get_topic(),];
     let (tx, rx) = launch_mqtt("localhost".to_string(), 1883, subscriptions, prefix.to_string());
-    let mut mqtt_messenger = MqttMessenger::new(&tx, &rx, vec![Box::new(PrintListener{})]);
+    let mut mqtt_messenger = MqttMessenger::new(&tx, &rx, vec![Box::new(AttachedIOListener::new())]);
     let device = ble_brick_device::init_ble_communication(mac).unwrap();
 
     log::info!("Found Technic hub");

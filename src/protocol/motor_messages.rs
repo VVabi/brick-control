@@ -381,6 +381,50 @@ impl StaticMessageInfo for AttachedIo {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct AttachedIos {
+    pub attached_devices: Vec<AttachedIo>
+}
+
+impl Message for AttachedIos {
+    #[inline]
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/io/attached_ios".to_string();
+    }
+}
+
+impl StaticMessageInfo for AttachedIos {
+    #[inline]
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/io/attached_ios".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RequestAttachedIos {}
+
+impl Message for RequestAttachedIos {
+    #[inline]
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/io/request_ios".to_string();
+    }
+}
+
+impl StaticMessageInfo for RequestAttachedIos {
+    #[inline]
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/io/request_ios".to_string();
+    }
+}
+
+
+
+#[derive(Serialize, Deserialize)]
 pub struct PortInformationRequest {
     pub port_id: u8
 }
