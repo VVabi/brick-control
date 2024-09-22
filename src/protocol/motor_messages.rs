@@ -12,7 +12,8 @@ pub enum BleMessageType{
     PortOutputCommand=0x81,
     PortOutputCommandFeedback=0x82,
     PortValue=0x45,
-    HubAttached=0x04,
+    IOAttached=0x04,
+    PortInputFormatAck=0x47
 }
 
 pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, Box<dyn Error>> {
@@ -23,8 +24,9 @@ pub fn translate_blemessagetype_from_int(input: u32) -> Result<BleMessageType, B
         0x81=> Ok(BleMessageType::PortOutputCommand),
         0x82=> Ok(BleMessageType::PortOutputCommandFeedback),
         0x45=> Ok(BleMessageType::PortValue),
-        0x04=> Ok(BleMessageType::HubAttached),
-        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType")))
+        0x04=> Ok(BleMessageType::IOAttached),
+        0x47=> Ok(BleMessageType::PortInputFormatAck),
+        _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "UnknownBleMessageType: ".to_string() + &input.to_string())))
     }
 }
 
@@ -211,6 +213,31 @@ impl StaticMessageInfo for EnableModeUpdates {
     #[inline]
     fn get_topic() -> std::string::String {
         return "brickcontrol/generic/set_mode_update".to_string();
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ModeUpdateAck {
+    pub port: Port,
+    pub mode: u8,
+    pub notifications_enabled: u8,
+    pub delta: u32
+}
+
+impl Message for ModeUpdateAck {
+    #[inline]
+    fn to_json(&self) -> std::result::Result<std::string::String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+    fn get_topic_dyn(&self) -> std::string::String {
+        return "brickcontrol/generic/mode_update_ack".to_string();
+    }
+}
+
+impl StaticMessageInfo for ModeUpdateAck {
+    #[inline]
+    fn get_topic() -> std::string::String {
+        return "brickcontrol/generic/mode_update_ack".to_string();
     }
 }
 

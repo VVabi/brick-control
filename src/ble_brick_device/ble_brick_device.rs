@@ -8,14 +8,14 @@ use blurz::bluetooth_event::BluetoothEvent;
 use crate::library::types::*;
 use crate::protocol::protocol_core::Message;
 use crate::protocol::*;
+use crate::listeners::*;
 use std::error::Error;
-
-use std::iter::Zip;
 use std::{thread, time};
 
 pub struct BleBrickDevice {
     session:        blurz::bluetooth_session::BluetoothSession,
-    characteristic_path: String
+    characteristic_path: String,
+    listeners:      Vec<Box<dyn ConnectionListener>>
 }
 
 fn serialize_ble_cmd(cmd: &dyn ble_ext::BleSerializationExt) -> Vec<u8> {
@@ -52,7 +52,7 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
             }
         }
-        BleMessageType::HubAttached => {
+        BleMessageType::IOAttached => {
             if values.len() >= 2  { 
                 let port = values[0];
                 let event = values[1];
@@ -75,6 +75,22 @@ fn parse_response(id: u8, values: &[u8]) -> Result<Box<dyn Message>, Box<dyn Err
                 let port        = values[0];
                 let flags       = values[1];
                 let message     = motor_messages::MotorCommandFeedback { port : motor_messages::translate_port_from_int(port as u32)?, flags: flags};
+                return Ok(Box::new(message));
+            } else {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
+            }        
+        }
+
+        BleMessageType::PortInputFormatAck => {
+            if values.len() >= 2  {
+                let port        = values[0];
+                let mode        = values[1];
+                let delta_interval = u32::from_le_bytes([values[2], values[3], values[4], values[5]]);
+                let notification_enabled = values[6];
+                let message     = motor_messages::ModeUpdateAck { port : motor_messages::translate_port_from_int(port as u32)?, 
+                    mode: mode, 
+                    delta: delta_interval, 
+                    notifications_enabled: notification_enabled};
                 return Ok(Box::new(message));
             } else {
                 return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "cannot interpret response" )));
@@ -216,7 +232,7 @@ pub fn init_ble_communication(mac: Option<&str>) -> Result<BleBrickDevice, Box<d
                 let chars = service.get_gatt_characteristics().unwrap();
                 let characteristic_path = chars.first().unwrap().to_string(); //TODO is this correct in all situations?
             
-                return Ok(BleBrickDevice {session, characteristic_path})
+                return Ok(BleBrickDevice {session, characteristic_path, listeners: Vec::new()});
             }
         }
     }
